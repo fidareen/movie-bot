@@ -1,29 +1,37 @@
 import os
 import requests
+import json
 from telegram import Bot
 
-TOKEN = os.getenv("TOKEN")
-EMBY_URL = " http://192.168.4.51:8096"
-LIBRARY_ID = "d41d8cd98f00b204e9800998ecf8427e"
+TOKEN = os.getenv("5993830966:AAEA0M_JCcFSlToHfUZzJfIWqJs7Yl8gfIA")
+EMBY_SERVER = " http://192.168.4.51:8096"
+EMBY_API_KEY = os.getenv("74aeed3e4f0d4161b3e995de01280e37")
 
 bot = Bot(TOKEN)
 
-def get_movies():
-    url = f"{EMBY_URL}/emby/Library/Items?Recursive=true&IncludeItemTypes=Movie&Fields=Path&UserId=96b8c2eab8834e60b00310dd9a4d3031&ParentId={LIBRARY_ID}"
-    response = requests.get(url)
-    movies = []
-    for item in response.json()["Items"]:
-        movies.append(item["Path"])
-    return movies
+def get_movie_list():
+    headers = {
+        "X-Emby-Token": EMBY_API_KEY,
+        "Accept": "application/json"
+    }
+    url = EMBY_SERVER + "/emby/Users/Public/Items"
+    response = requests.get(url, headers=headers)
+    data = json.loads(response.text)
+    movie_list = []
+    for item in data:
+        if item["Type"] == "Movie":
+            movie_list.append(item["Name"])
+    return movie_list
 
-def start(update, context):
-    movies = get_movies()
-    message = "Here are your movies:\n\n"
-    for movie in movies:
-        message += f"{movie}\n"
-    context.bot.send_message(chat_id=update.effective_chat.id, text=message)
+def send_movie_list():
+    movie_list = get_movie_list()
+    if not movie_list:
+        bot.send_message(chat_id=<YOUR_CHAT_ID>, text="No movies found on Emby server")
+    else:
+        message = "List of movies on Emby server:\n\n"
+        for movie in movie_list:
+            message += "- " + movie + "\n"
+        bot.send_message(chat_id=<YOUR_CHAT_ID>, text=message)
 
-from telegram.ext import CommandHandler
-
-start_handler = CommandHandler('start', start)
-dispatcher.add_handler(start_handler)
+if __name__ == "__main__":
+    send_movie_list()
